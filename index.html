@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Concierge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        #question {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        #careers-list {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Career Concierge</h1>
+    <div id="question">Welcome to Career Concierge! Click Start to begin.</div>
+    <button id="yesBtn" onclick="handleResponse('yes')" style="display: none;">Yes</button>
+    <button id="noBtn" onclick="handleResponse('no')" style="display: none;">No</button>
+    <button id="startBtn" onclick="start()">Start</button>
+    <div id="careers-list" style="display: none;">
+        <h2>Possible Careers:</h2>
+        <ul id="careers-ul"></ul>
+    </div>
+    <script>
+        const careers = {
+            "Software Developer": {
+                "attributes": {"tech_savvy": true, "creative": true, "problem_solver": true},
+                "questions": ["Do you enjoy solving complex problems?", "Are you comfortable with technology?", "Do you like being creative?"]
+            },
+            "Nurse": {
+                "attributes": {"empathetic": true, "patient": true, "detail_oriented": true},
+                "questions": ["Are you empathetic towards others?", "Do you have patience in stressful situations?", "Are you detail-oriented?"]
+            },
+            "Graphic Designer": {
+                "attributes": {"creative": true, "visual_thinker": true, "tech_savvy": true},
+                "questions": ["Do you enjoy creating visual content?", "Are you a visual thinker?", "Are you comfortable with design software?"]
+            },
+            "Mechanical Engineer": {
+                "attributes": {"problem_solver": true, "analytical": true, "tech_savvy": true},
+                "questions": ["Do you enjoy solving technical problems?", "Are you analytical?", "Are you comfortable with mechanical systems?"]
+            },
+            "Teacher": {
+                "attributes": {"empathetic": true, "patient": true, "good_communicator": true},
+                "questions": ["Do you enjoy teaching others?", "Are you empathetic?", "Do you have patience?"]
+            },
+            "Marketing Manager": {
+                "attributes": {"creative": true, "good_communicator": true, "strategic_thinker": true},
+                "questions": ["Do you enjoy creating marketing strategies?", "Are you a good communicator?", "Do you think strategically?"]
+            }
+        };
+
+        let userAttributes = {};
+        let remainingQuestions = [];
+        let possibleCareers = Object.keys(careers);
+
+        function initQuestions() {
+            const questions = new Set();
+            for (const career in careers) {
+                for (const question of careers[career].questions) {
+                    questions.add(question);
+                }
+            }
+            remainingQuestions = Array.from(questions);
+        }
+
+        function questionToAttribute(question) {
+            const questionToAttributeMap = {
+                "Do you enjoy solving complex problems?": "problem_solver",
+                "Are you comfortable with technology?": "tech_savvy",
+                "Do you like being creative?": "creative",
+                "Are you empathetic towards others?": "empathetic",
+                "Do you have patience in stressful situations?": "patient",
+                "Are you detail-oriented?": "detail_oriented",
+                "Do you enjoy creating visual content?": "creative",
+                "Are you a visual thinker?": "visual_thinker",
+                "Are you comfortable with design software?": "tech_savvy",
+                "Do you enjoy solving technical problems?": "problem_solver",
+                "Are you analytical?": "analytical",
+                "Are you comfortable with mechanical systems?": "tech_savvy",
+                "Do you enjoy teaching others?": "good_communicator",
+                "Do you have patience?": "patient",
+                "Do you enjoy creating marketing strategies?": "creative",
+                "Are you a good communicator?": "good_communicator",
+                "Do you think strategically?": "strategic_thinker"
+            };
+            return questionToAttributeMap[question];
+        }
+
+        function askNextQuestion() {
+            if (remainingQuestions.length === 0) {
+                document.getElementById("question").innerText = "I have no more questions.";
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * remainingQuestions.length);
+            const question = remainingQuestions[randomIndex];
+            remainingQuestions.splice(randomIndex, 1);
+            document.getElementById("question").innerText = question;
+        }
+
+        function updateUserAttributes(question, response) {
+            const attribute = questionToAttribute(question);
+            if (attribute !== undefined) {
+                userAttributes[attribute] = response === 'yes';
+                const filteredCareers = possibleCareers.filter(career => {
+                    const careerAttributes = careers[career].attributes;
+                    return (response === 'yes' && careerAttributes[attribute]) || (response === 'no' && !careerAttributes[attribute]);
+                });
+                possibleCareers = filteredCareers.length > 0 ? filteredCareers : possibleCareers;
+                updateCareersList();
+            }
+        }
+
+        function updateCareersList() {
+            const careersUl = document.getElementById("careers-ul");
+            careersUl.innerHTML = '';
+            for (const career of possibleCareers) {
+                const li = document.createElement("li");
+                li.textContent = career;
+                careersUl.appendChild(li);
+            }
+            if (possibleCareers.length === 1) {
+                document.getElementById("question").innerText = `Suggested career: ${possibleCareers[0]}`;
+                document.getElementById("yesBtn").style.display = "none";
+                document.getElementById("noBtn").style.display = "none";
+            }
+        }
+
+        function handleResponse(response) {
+            const question = document.getElementById("question").innerText;
+            updateUserAttributes(question, response);
+            if (possibleCareers.length > 1) {
+                askNextQuestion();
+            }
+        }
+
+        function start() {
+            userAttributes = {};
+            possibleCareers = Object.keys(careers);
+            initQuestions();
+            updateCareersList();
+            document.getElementById("careers-list").style.display = "block";
+            askNextQuestion();
+            document.getElementById("yesBtn").style.display = "inline-block";
+            document.getElementById("noBtn").style.display = "inline-block";
+            document.getElementById("startBtn").style.display = "none";
+        }
+    </script>
+</body>
+</html>
+
