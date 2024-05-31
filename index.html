@@ -4,38 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Career Concierge</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
             background-color: #f7f7f7;
         }
         #question {
             font-size: 18px;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
         #careers-list {
             margin-top: 20px;
         }
-        button {
+        .btn-custom {
             padding: 10px 20px;
             margin-right: 10px;
             font-size: 16px;
             cursor: pointer;
         }
+        select {
+            padding: 10px;
+            font-size: 16px;
+        }
+        .container {
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
-    <h1>Career Concierge</h1>
-    <h2>Collaborative bayesian inverse planning to elevate customer service to oracular levels.</h2>
-    <div id="question">Welcome to Career Concierge! Click Start to begin.</div>
-    <button id="yesBtn" onclick="handleResponse('yes')" style="display: none;">Yes</button>
-    <button id="noBtn" onclick="handleResponse('no')" style="display: none;">No</button>
-    <button id="startBtn" onclick="start()">Start</button>
-    <div id="careers-list" style="display: none;">
-        <h2>Possible Careers:</h2>
-        <ul id="careers-ul"></ul>
+    <div class="container">
+        <h1 class="text-center">Career Concierge</h1>
+        <h2 class="text-center">Collaborative Bayesian Inverse Planning to Elevate Customer Service to Oracular Levels.</h2>
+        <div class="text-center" id="strategy-container">
+            <label for="strategy">Select Question Generation Strategy:</label>
+            <select id="strategy" class="custom-select w-auto ml-2">
+                <option value="RAND">RAND: Relevant Random Question Selection</option>
+                <option value="MEP">MEP: Most Eliminating Power</option>
+                <option value="CLIPS">CLIPS: Placeholder (Same as MEP for now)</option>
+            </select>
+        </div>
+        <div class="text-center mt-4" id="question">Welcome to Career Concierge! Click Start to begin.</div>
+        <div class="text-center">
+            <button id="yesBtn" onclick="handleResponse('yes')" class="btn btn-success btn-custom" style="display: none;">Yes</button>
+            <button id="noBtn" onclick="handleResponse('no')" class="btn btn-danger btn-custom" style="display: none;">No</button>
+            <button id="startBtn" onclick="start()" class="btn btn-primary btn-custom">Start</button>
+            <button id="resetBtn" onclick="reset()" class="btn btn-secondary btn-custom" style="display: none;">Reset</button>
+        </div>
+        <div id="careers-list" style="display: none;">
+            <h2 class="text-center mt-4">Possible Careers:</h2>
+            <ul id="careers-ul" class="list-group"></ul>
+        </div>
     </div>
     <script>
         const careers = {
@@ -103,13 +122,47 @@
         }
 
         function askNextQuestion() {
+            const strategy = document.getElementById("strategy").value;
             if (remainingQuestions.length === 0) {
                 document.getElementById("question").innerText = "I have no more questions.";
                 return;
             }
-            const randomIndex = Math.floor(Math.random() * remainingQuestions.length);
-            const question = remainingQuestions[randomIndex];
-            remainingQuestions.splice(randomIndex, 1);
+            let question;
+            if (strategy === "RAND") {
+                // Filter relevant questions based on remaining careers
+                const relevantQuestions = remainingQuestions.filter(q => {
+                    const attribute = questionToAttribute(q);
+                    return possibleCareers.some(career => careers[career].attributes[attribute] !== undefined);
+                });
+                const randomIndex = Math.floor(Math.random() * relevantQuestions.length);
+                question = relevantQuestions[randomIndex];
+                remainingQuestions = remainingQuestions.filter(q => q !== question);
+            } else {
+                let bestQuestion = remainingQuestions[0];
+                let bestScore = -1;
+                remainingQuestions.forEach(q => {
+                    const attribute = questionToAttribute(q);
+                    let yesCount = 0;
+                    let noCount = 0;
+
+                    possibleCareers.forEach(career => {
+                        const careerAttributes = careers[career].attributes;
+                        if (careerAttributes[attribute]) {
+                            yesCount++;
+                        } else {
+                            noCount++;
+                        }
+                    });
+
+                    const score = Math.min(yesCount, noCount);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestQuestion = q;
+                    }
+                });
+                question = bestQuestion;
+                remainingQuestions = remainingQuestions.filter(q => q !== question);
+            }
             document.getElementById("question").innerText = question;
         }
 
@@ -117,11 +170,10 @@
             const attribute = questionToAttribute(question);
             if (attribute !== undefined) {
                 userAttributes[attribute] = response === 'yes';
-                const filteredCareers = possibleCareers.filter(career => {
+                possibleCareers = possibleCareers.filter(career => {
                     const careerAttributes = careers[career].attributes;
                     return (response === 'yes' && careerAttributes[attribute]) || (response === 'no' && !careerAttributes[attribute]);
                 });
-                possibleCareers = filteredCareers.length > 0 ? filteredCareers : possibleCareers;
                 updateCareersList();
             }
         }
@@ -132,12 +184,14 @@
             for (const career of possibleCareers) {
                 const li = document.createElement("li");
                 li.textContent = career;
+                li.className = "list-group-item";
                 careersUl.appendChild(li);
             }
             if (possibleCareers.length === 1) {
                 document.getElementById("question").innerText = `Suggested career: ${possibleCareers[0]}`;
                 document.getElementById("yesBtn").style.display = "none";
                 document.getElementById("noBtn").style.display = "none";
+                document.getElementById("resetBtn").style.display = "inline-block";
             }
         }
 
@@ -150,6 +204,9 @@
         }
 
         function start() {
+            document.getElementById("strategy-container").style.display = "none";
+            document.getElementById("startBtn").style.display = "none";
+            document.getElementById("resetBtn").style.display = "none";
             userAttributes = {};
             possibleCareers = Object.keys(careers);
             initQuestions();
@@ -158,9 +215,17 @@
             askNextQuestion();
             document.getElementById("yesBtn").style.display = "inline-block";
             document.getElementById("noBtn").style.display = "inline-block";
-            document.getElementById("startBtn").style.display = "none";
+        }
+
+        function reset() {
+            document.getElementById("strategy-container").style.display = "block";
+            document.getElementById("startBtn").style.display = "inline-block";
+            document.getElementById("resetBtn").style.display = "none";
+            document.getElementById("yesBtn").style.display = "none";
+            document.getElementById("noBtn").style.display = "none";
+            document.getElementById("careers-list").style.display = "none";
+            document.getElementById("question").innerText = "Welcome to Career Concierge! Click Start to begin.";
         }
     </script>
 </body>
 </html>
-
