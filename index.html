@@ -186,9 +186,11 @@
         function updateCareersList() {
             const careersUl = document.getElementById("careers-ul");
             careersUl.innerHTML = '';
+            const totalCareers = possibleCareers.length;
             for (const career of possibleCareers) {
                 const li = document.createElement("li");
-                li.textContent = career;
+                const probability = (1 / totalCareers).toFixed(2);
+                li.textContent = `${career} (Probability: ${probability})`;
                 li.className = "list-group-item";
                 careersUl.appendChild(li);
             }
